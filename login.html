@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WASD Typing Test - Login</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+
+    .container {
+      background-color: #21a7d1;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 350px;
+      color: white;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .form-container {
+      margin-top: 20px;
+    }
+
+    .tab-buttons {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-button.active {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .tab-button:first-child {
+      border-radius: 5px 0 0 5px;
+    }
+
+    .tab-button:last-child {
+      border-radius: 0 5px 5px 0;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #1a86a8;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #156c8a;
+    }
+
+    button:disabled {
+      background-color: #7fb7c9;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      display: none;
+    }
+
+    .error {
+      background-color: #ffdddd;
+      color: #cc0000;
+    }
+
+    .success {
+      background-color: #ddffdd;
+      color: #00cc00;
+    }
+
+    .info {
+      background-color: #ddeeff;
+      color: #0066cc;
+    }
+    
+    .guest-button {
+      display: block;
+      width: 93%;
+      padding: 12px;
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 30px;
+      text-align: center;
+      text-decoration: none;
+    }
+    
+    .guest-button:hover {
+      background-color: #e68a00;
+    }
+
+
+    @keyframes spinner {
+      to {transform: rotate(360deg);}
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spinner 0.8s linear infinite;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+  <h1>WASD Typing Test</h1>
+
+  <div class="tab-buttons">
+    <button class="tab-button active" id="login-tab">Login</button>
+    <button class="tab-button" id="register-tab">Register</button>
+  </div>
+
+  <div class="form-container" id="login-form">
+    <div class="form-group">
+      <label for="login-username">Username</label>
+      <input type="text" id="login-username" placeholder="Enter your username">
+    </div>
+
+    <div class="form-group">
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" placeholder="Enter your password">
+    </div>
+
+    <button id="login-button">Login</button>
+  </div>
+
+  <div class="form-container" id="register-form" style="display: none;">
+    <div class="form-group">
+      <label for="register-username">Username</label>
+      <input type="text" id="register-username" placeholder="Choose a username (min 3 characters)">
+    </div>
+
+    <div class="form-group">
+      <label for="register-password">Password</label>
+      <input type="password" id="register-password" placeholder="Choose a password (min 6 characters)">
+    </div>
+
+    <div class="form-group">
+      <label for="register-confirm-password">Confirm Password</label>
+      <input type="password" id="register-confirm-password" placeholder="Confirm your password">
+    </div>
+
+    <button id="register-button">Register</button>
+  </div>
+
+  <a href="/guest" class="guest-button" id="guest-button">Play as Guest</a>
+
+  <div id="message" class="message"></div>
+</div>
+
+
+<script>
+
+  const loginTab = document.getElementById('login-tab');
+  const registerTab = document.getElementById('register-tab');
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  const loginButton = document.getElementById('login-button');
+  const registerButton = document.getElementById('register-button');
+  const messageDiv = document.getElementById('message');
+  const guestButton = document.getElementById('guest-button');
+
+
+  const loginUsername = document.getElementById('login-username');
+  const loginPassword = document.getElementById('login-password');
+
+
+  const registerUsername = document.getElementById('register-username');
+  const registerPassword = document.getElementById('register-password');
+  const registerConfirmPassword = document.getElementById('register-confirm-password');
+
+
+  fetch('/api/guest-available')
+    .then(response => response.json())
+    .then(data => {
+      if (data.isBanned) {
+        showMessage('Note: Your device is banned, but you can still play as a guest', 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Error checking guest availability:', error);
+    });
+
+
+  loginTab.addEventListener('click', function() {
+    loginTab.classList.add('active');
+    registerTab.classList.remove('active');
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+  });
+
+  registerTab.addEventListener('click', function() {
+    registerTab.classList.add('active');
+    loginTab.classList.remove('active');
+    registerForm.style.display = 'block';
+    loginForm.style.display = 'none';
+  });
+
+
+  loginButton.addEventListener('click', function() {
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+
+    if (!username || !password) {
+      showMessage('Please enter both username and password', 'error');
+      return;
+    }
+
+
+    showProcessing(loginButton, 'Processing login...');
+
+
+    fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    })
+      .then(response => response.json())
+      .then(data => {
+
+        hideProcessing(loginButton, 'Login');
+        
+        if (data.success) {
+          showMessage('Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        } else {
+
+          if (data.banned) {
+            showMessage(data.message, 'error');
+          } else {
+            showMessage(data.message || 'Login failed', 'error');
+          }
+        }
+      })
+      .catch(error => {
+
+        hideProcessing(loginButton, 'Login');
+        
+        console.error('Login error:', error);
+        showMessage('An error occurred during login', 'error');
+      });
+  });
+
+
+  registerButton.addEventListener('click', function() {
+    const username = registerUsername.value.trim();
+    const password = registerPassword.value;
+    const confirmPassword = registerConfirmPassword.value;
+
+    if (!username || !password || !confirmPassword) {
+      showMessage('Please fill in all fields', 'error');
+      return;
+    }
+
+    if (username.length < 3) {
+      showMessage('Username must be at least 3 characters', 'error');
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage('Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showMessage('Passwords do not match', 'error');
+      return;
+    }
+
+
+    showProcessing(registerButton, 'Processing registration...');
+
+
+    fetch('/api/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })
+    })
+      .then(response => response.json())
+      .then(data => {
+
+        hideProcessing(registerButton, 'Register');
+        
+        if (data.success) {
+          showMessage('Registration successful! Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1000);
+        } else {
+
+          if (data.banned) {
+            showMessage(data.message, 'error');
+          } else {
+            showMessage(data.message || 'Registration failed', 'error');
+          }
+        }
+      })
+      .catch(error => {
+
+        hideProcessing(registerButton, 'Register');
+        
+        console.error('Registration error:', error);
+        showMessage('An error occurred during registration', 'error');
+      });
+  });
+
+
+  loginPassword.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      loginButton.click();
+    }
+  });
+
+  registerConfirmPassword.addEventListener('keyup', function(event) {
+    if (event.key === 'Enter') {
+      registerButton.click();
+    }
+  });
+
+
+  function showMessage(message, type) {
+    messageDiv.textContent = message;
+    messageDiv.className = `message ${type}`;
+    messageDiv.style.display = 'block';
+
+
+    if (!message.includes('banned')) {
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 5000);
+    }
+  }
+
+
+  function showProcessing(button, message) {
+
+    button.disabled = true;
+    
+
+    button.dataset.originalText = button.textContent;
+    
+
+    button.innerHTML = message + ' <span class="spinner"></span>';
+    
+
+    showMessage('Please wait while processing your request...', 'info');
+  }
+
+  function hideProcessing(button, defaultText) {
+
+    button.disabled = false;
+    
+
+    button.textContent = button.dataset.originalText || defaultText;
+  }
+
+
+  async function getClientMachineId() {
+      try {
+
+
+
+          let machineId = null;
+
+
+          if (window.require) {
+              try {
+                  const machineIdLib = window.require('node-machine-id');
+                  machineId = await machineIdLib.machineId();
+              } catch (err) {
+                  console.error('Error using node-machine-id:', err);
+              }
+          }
+
+
+          if (!machineId) {
+
+              const fingerprint = {
+                  userAgent: navigator.userAgent,
+                  language: navigator.language,
+                  platform: navigator.platform,
+                  screenWidth: window.screen.width,
+                  screenHeight: window.screen.height,
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  colorDepth: window.screen.colorDepth
+              };
+
+
+              machineId = await createHash(JSON.stringify(fingerprint));
+          }
+
+          return machineId;
+      } catch (error) {
+          console.error('Error getting client machine ID:', error);
+          return 'unknown';
+      }
+  }
+
+
+  async function createHash(str) {
+
+      if (window.crypto && window.crypto.subtle) {
+          const msgBuffer = new TextEncoder().encode(str);
+          const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } else {
+
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+              const char = str.charCodeAt(i);
+              hash = ((hash << 5) - hash) + char;
+              hash = hash & hash;
+          }
+          return hash.toString(36);
+      }
+  }
+
+
+  async function handleRegistration(e) {
+      e.preventDefault();
+
+
+      const machineId = await getClientMachineId();
+
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+
+      fetch('/api/register', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-Machine-ID': machineId
+          },
+          body: JSON.stringify({ username, password })
+      })
+          .then(response => response.json())
+          .then(data => {
+
+              if (data.success) {
+                  window.location.href = '/';
+              } else {
+                  alert(data.message);
+              }
+          })
+          .catch(error => {
+              console.error('Registration error:', error);
+              alert('Error during registration. Please try again.');
+          });
+  }
+
+
+  async function handleLogin(e) {
+      e.preventDefault();
+
+
+      const machineId = await getClientMachineId();
+
+
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+
+
+      fetch('/api/login', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-Machine-ID': machineId
+          },
+          body: JSON.stringify({ username, password })
+      })
+          .then(response => response.json())
+          .then(data => {
+
+              if (data.success) {
+                  window.location.href = '/';
+              } else {
+                  alert(data.message);
+              }
+          })
+          .catch(error => {
+              console.error('Login error:', error);
+              alert('Error during login. Please try again.');
+          });
+  }
+</script>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+
+    const formData = new FormData(this);
+    const data = {
+        username: formData.get('username'),
+        password: formData.get('password')
+    };
+    
+
+    if (window.getClientMachineId) {
+        data.machineId = await window.getClientMachineId();
+    }
+    
+
+    fetch('/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/';
+        } else {
+            alert(data.message || 'Login failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred during login');
+    });
+});
+</script>
+<script src="/client-machine-id.js"></script>
+</body>
+</html>

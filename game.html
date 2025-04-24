@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WASD Typing Test</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    #main{
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 98%;
+      height: 96%;
+      background-color: #21a7d1;
+      border-radius: 30px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    #key-info{
+      width: 5vw;
+      height: 5vw;
+      background-color: #52c8e5;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 10px;
+    }
+
+    #leaderboard {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background-color: #52c8e5;
+      padding: 15px;
+      border-radius: 10px;
+      width: 200px;
+      max-height: 80%;
+      overflow-y: auto;
+    }
+
+    #leaderboard h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      text-align: center;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #user-info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background-color: #52c8e5;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    #logout-button {
+      background-color: #1a86a8;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+
+    #logout-button:hover {
+      background-color: #156c8a;
+    }
+
+    #debug-button {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background-color: #ff9800;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: none;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="main" style="text-align: center;">
+
+  <div id="user-info">
+    <div id="welcome-message">Welcome, <span id="username-display">Player</span>!</div>
+    <div id="high-score">High Score: <span id="high-score-display">0.00</span></div>
+    <button id="logout-button">Logout</button>
+  </div>
+
+  <p id="timer-info">Press Space to start</p>
+  <p id="score">Score: 0</p>
+  <p id="key-info"></p>
+
+  <div id="leaderboard">
+    <h2>Leaderboard</h2>
+    <div id="leaderboard-items"></div>
+  </div>
+
+  <button id="debug-button">Debug DB</button>
+
+  <script>
+    const sequence = ['w', 'a', 's', 'd'];
+    let currentIndex = 0;
+    let score = 0;
+    const time = 5;
+    let timeLeft = 5;
+    let gameStarted = false;
+    let timer;
+    let username = '';
+    let userHighScore = 0;
+
+    const scoreDisplay = document.getElementById('score');
+    const timerInfo = document.getElementById('timer-info');
+    const leaderboard = document.getElementById('leaderboard');
+    const leaderboardItems = document.getElementById('leaderboard-items');
+    const usernameDisplay = document.getElementById('username-display');
+    const highScoreDisplay = document.getElementById('high-score-display');
+    const logoutButton = document.getElementById('logout-button');
+    const debugButton = document.getElementById('debug-button');
+
+
+    let debug = false;
+    if (debug) {
+      debugButton.style.display = 'block';
+      debugButton.addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/debug/tables');
+          const data = await response.json();
+          console.log('Database tables:', data);
+          alert('Check console for database tables');
+        } catch (error) {
+          console.error('Debug error:', error);
+        }
+      });
+    }
+
+    getUserInfo();
+    fetchLeaderboard();
+
+    logoutButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/api/logout';
+    });
+
+    function startGame() {
+      gameStarted = true;
+      timerInfo.textContent = `You have ${timeLeft} seconds. Go!`;
+
+      timer = setInterval(() => {
+        timeLeft--;
+        timerInfo.textContent = `You have ${timeLeft} seconds. Go!`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.removeEventListener('keydown', handleKey);
+
+
+          const finalScore = score/time;
+
+          saveScore(finalScore);
+
+          alert("Time's up! Final Score: " + finalScore.toFixed(2));
+          timeLeft = time;
+
+          resetGame();
+        }
+      }, 1000);
+    }
+
+    function handleKey(event) {
+      const key = event.key.toLowerCase();
+
+      if (!gameStarted && key === ' ') {
+        startGame();
+
+        document.getElementById('key-info').style.display = 'flex';
+        document.getElementById('key-info').textContent = 'W';
+        return;
+      }
+
+      if (!gameStarted) {
+        return;
+      }
+
+      const expectedKey = sequence[currentIndex];
+      if (key === expectedKey) {
+        score++;
+        currentIndex = (currentIndex + 1) % sequence.length;
+        document.getElementById('key-info').textContent = sequence[currentIndex].toUpperCase();
+
+      } else {
+        score--;
+      }
+      scoreDisplay.textContent = `Score: ${score}`;
+    }
+
+
+    async function getUserInfo() {
+      try {
+        const response = await fetch('/api/user');
+
+        if (response.status === 401 || !response.ok) {
+
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const data = await response.json();
+        username = data.username;
+        usernameDisplay.textContent = username;
+        
+
+        
+
+        if (data.isBanned) {
+
+          const bannedNotice = document.createElement('div');
+          bannedNotice.textContent = 'Your account is banned';
+          bannedNotice.style.color = '#ff6666';
+          bannedNotice.style.fontWeight = 'bold';
+          bannedNotice.style.marginTop = '10px';
+          document.getElementById('user-info').appendChild(bannedNotice);
+          
+
+          const leaderboardNotice = document.createElement('div');
+          leaderboardNotice.textContent = 'Banned users do not appear on the leaderboard';
+          leaderboardNotice.style.color = '#ff6666';
+          leaderboardNotice.style.fontSize = '0.8rem';
+          leaderboardNotice.style.marginTop = '5px';
+          document.getElementById('leaderboard-items').appendChild(leaderboardNotice);
+        }
+
+
+        if (data.highScore) {
+          userHighScore = parseFloat(data.highScore);
+          highScoreDisplay.textContent = userHighScore.toFixed(2);
+        }
+
+
+        document.addEventListener('keydown', handleKey);
+
+        console.log('User info loaded:', data);
+
+      } catch (error) {
+        console.error('Error getting user info:', error);
+      }
+    }
+
+    async function saveScore(score) {
+      try {
+        console.log('Saving score:', score);
+
+        const response = await fetch('/api/scores', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ score })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Score save response:', data);
+
+
+          if (data.success && data.highScore) {
+            userHighScore = parseFloat(data.highScore);
+            highScoreDisplay.textContent = userHighScore.toFixed(2);
+          }
+
+
+          fetchLeaderboard();
+        } else {
+          console.error('Error saving score:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error saving score:', error);
+      }
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const response = await fetch('/api/scores');
+        if (!response.ok) {
+          console.error('Error fetching leaderboard:', response.status, response.statusText);
+          
+
+          leaderboardItems.innerHTML = '<div style="color: #ffcccc; text-align: center;">Error loading leaderboard</div>';
+          return;
+        }
+
+        const scores = await response.json();
+        console.log('Leaderboard data:', scores);
+
+
+        leaderboardItems.innerHTML = '';
+
+        if (!scores || scores.length === 0) {
+          const emptyMessage = document.createElement('div');
+          emptyMessage.textContent = 'No scores yet!';
+          emptyMessage.style.textAlign = 'center';
+          emptyMessage.style.padding = '10px 0';
+          leaderboardItems.appendChild(emptyMessage);
+          return;
+        }
+
+
+        scores.forEach((score, index) => {
+          const item = document.createElement('div');
+          item.className = 'leaderboard-item';
+
+
+          if (score.username === username) {
+            item.style.fontWeight = 'bold';
+            item.style.color = '#ffd700';
+          }
+
+          item.innerHTML = `
+        <span>${index + 1}. ${score.username}</span>
+        <span>${parseFloat(score.highScore).toFixed(2)}</span>
+      `;
+          leaderboardItems.appendChild(item);
+        });
+        
+
+        const refreshButton = document.createElement('button');
+        refreshButton.textContent = 'Refresh Leaderboard';
+        refreshButton.style.marginTop = '10px';
+        refreshButton.style.padding = '5px 10px';
+        refreshButton.style.backgroundColor = '#1a86a8';
+        refreshButton.style.color = 'white';
+        refreshButton.style.border = 'none';
+        refreshButton.style.borderRadius = '5px';
+        refreshButton.style.cursor = 'pointer';
+        refreshButton.style.width = '100%';
+        refreshButton.addEventListener('click', fetchLeaderboard);
+        leaderboardItems.appendChild(refreshButton);
+        
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        leaderboardItems.innerHTML = '<div style="color: #ffcccc; text-align: center;">Unable to load leaderboard</div>';
+      }
+    }
+
+    function resetGame() {
+      gameStarted = false;
+      score = 0;
+      currentIndex = 0;
+      timeLeft = time;
+
+      scoreDisplay.textContent = 'Score: 0';
+      timerInfo.textContent = 'Press Space to start';
+      document.getElementById('key-info').style.display = 'none';
+
+
+      document.addEventListener('keydown', handleKey);
+
+
+      fetchLeaderboard();
+    }
+  </script>
+</div>
+</body>
+</html>

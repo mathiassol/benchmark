@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASD Game Admin Panel</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #21a7d1;
+            text-align: center;
+        }
+        .admin-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .user-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .user-list th, .user-list td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .user-list th {
+            background-color: #21a7d1;
+            color: white;
+        }
+        .user-list tr:hover {
+            background-color: #f9f9f9;
+        }
+        .banned {
+            background-color: #ffeeee;
+        }
+        .banned td {
+            color: #cc0000;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .ban-button {
+            background-color: #cc0000;
+            color: white;
+        }
+        .ban-button:hover {
+            background-color: #aa0000;
+        }
+        .unban-button {
+            background-color: #00cc00;
+            color: white;
+        }
+        .unban-button:hover {
+            background-color: #00aa00;
+        }
+        .start-button {
+            background-color: #00cc00;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+        .stop-button {
+            background-color: #cc0000;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+        .back-button {
+            background-color: #21a7d1;
+            color: white;
+            margin-bottom: 20px;
+            display: inline-block;
+            text-decoration: none;
+            padding: 10px 15px;
+        }
+        .search-bar {
+            margin: 20px 0;
+            display: flex;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+        .search-bar button {
+            border-radius: 0 4px 4px 0;
+            background-color: #21a7d1;
+            color: white;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .modal textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .modal button {
+            margin-top: 10px;
+            width: 100%;
+        }
+        .server-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-running {
+            background-color: #00cc00;
+        }
+        .status-stopped {
+            background-color: #cc0000;
+        }
+        .status-stopping {
+            background-color: #ffaa00;
+        }
+        .server-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .logs-container {
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #2b2b2b;
+            color: #f0f0f0;
+            padding: 10px;
+            font-family: monospace;
+            border-radius: 5px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+            border-bottom: 1px solid #444;
+        }
+        .log-error {
+            color: #ff6b6b;
+        }
+        .log-info {
+            color: #f0f0f0;
+        }
+        .refresh-button {
+            background-color: #21a7d1;
+            color: white;
+            margin-left: auto;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #eee;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            position: relative;
+            bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 5px;
+            background-color: white;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <h1>WASD Game Admin Dashboard</h1>
+
+    <div id="message" style="display: none;"></div>
+
+    <div class="tabs">
+        <div id="server-tab" class="tab active">Server Control</div>
+        <div id="users-tab" class="tab">User Management</div>
+    </div>
+
+    <div id="server-content" class="tab-content active">
+        <div class="admin-panel">
+            <h2>Server Control</h2>
+            <div class="server-status">
+                <div>
+                    <span class="status-indicator" id="status-light"></span>
+                    <span id="status-text">Checking server status...</span>
+                </div>
+                <div class="server-controls">
+                    <button id="start-server" class="start-button">Start Server</button>
+                    <button id="stop-server" class="stop-button">Stop Server</button>
+                    <button id="refresh-status" class="refresh-button">Refresh Status</button>
+                </div>
+            </div>
+            <h3>Server Logs</h3>
+            <div class="logs-container" id="logs-container">
+                <div class="log-entry">Waiting for logs...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="users-content" class="tab-content">
+        <div class="admin-panel">
+            <h2>User Management</h2>
+
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search for users...">
+                <button id="search-button">Search</button>
+            </div>
+
+            <table class="user-list">
+                <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>High Score</th>
+                    <th>Machine ID</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody id="user-list-body">
+                <!-- User rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Ban Modal -->
+<div id="ban-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3>Ban User</h3>
+        <p>Enter a reason for banning <strong id="ban-username"></strong>:</p>
+        <textarea id="ban-reason" placeholder="Reason for ban"></textarea>
+        <button id="confirm-ban" class="ban-button">Ban User</button>
+    </div>
+</div>
+
+<script>
+
+    const userListBody = document.getElementById('user-list-body');
+    const messageDiv = document.getElementById('message');
+    const searchInput = document.getElementById('search-input');
+    const searchButton = document.getElementById('search-button');
+    const banModal = document.getElementById('ban-modal');
+    const banUsername = document.getElementById('ban-username');
+    const banReason = document.getElementById('ban-reason');
+    const confirmBanButton = document.getElementById('confirm-ban');
+    const modalClose = document.querySelector('.close');
+    const statusLight = document.getElementById('status-light');
+    const statusText = document.getElementById('status-text');
+    const startServerButton = document.getElementById('start-server');
+    const stopServerButton = document.getElementById('stop-server');
+    const refreshStatusButton = document.getElementById('refresh-status');
+    const logsContainer = document.getElementById('logs-container');
+    const serverTab = document.getElementById('server-tab');
+    const usersTab = document.getElementById('users-tab');
+    const serverContent = document.getElementById('server-content');
+    const usersContent = document.getElementById('users-content');
+
+
+    let currentBanUser = null;
+
+
+    let statusInterval = null;
+
+
+    const MANAGER_API = '/api/manager';
+
+    const SERVER_API = '/api';
+
+
+    initTabs();
+    checkServerStatus();
+    startStatusInterval();
+    loadLogs();
+
+
+    startServerButton.addEventListener('click', startServer);
+    stopServerButton.addEventListener('click', stopServer);
+    refreshStatusButton.addEventListener('click', function() {
+        checkServerStatus();
+        loadLogs();
+    });
+
+    searchButton.addEventListener('click', filterUsers);
+    searchInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            filterUsers();
+        }
+    });
+
+    modalClose.addEventListener('click', function() {
+        banModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(event) {
+        if (event.target === banModal) {
+            banModal.style.display = 'none';
+        }
+    });
+
+    confirmBanButton.addEventListener('click', function() {
+        if (currentBanUser) {
+            banUser(currentBanUser, banReason.value);
+        }
+    });
+
+    serverTab.addEventListener('click', function() {
+        activateTab('server');
+    });
+
+    usersTab.addEventListener('click', function() {
+        activateTab('users');
+        loadUsers();
+    });
+
+
+    function initTabs() {
+
+        activateTab('server');
+    }
+
+    function activateTab(tabName) {
+
+        [serverTab, usersTab].forEach(tab => tab.classList.remove('active'));
+        [serverContent, usersContent].forEach(content => content.classList.remove('active'));
+
+
+        if (tabName === 'server') {
+            serverTab.classList.add('active');
+            serverContent.classList.add('active');
+        } else if (tabName === 'users') {
+            usersTab.classList.add('active');
+            usersContent.classList.add('active');
+        }
+    }
+
+    function startStatusInterval() {
+
+        statusInterval = setInterval(() => {
+            checkServerStatus();
+            loadLogs();
+        }, 5000);
+    }
+
+    async function checkServerStatus() {
+        try {
+            const response = await fetch(`${MANAGER_API}/status`);
+            const data = await response.json();
+
+
+            updateStatusDisplay(data.status);
+
+
+            startServerButton.disabled = data.isRunning;
+            stopServerButton.disabled = !data.isRunning;
+        } catch (error) {
+            console.error('Error checking server status:', error);
+            updateStatusDisplay('unknown');
+        }
+    }
+
+    function updateStatusDisplay(status) {
+        statusLight.className = 'status-indicator';
+
+        if (status === 'running') {
+            statusLight.classList.add('status-running');
+            statusText.textContent = 'Server is running';
+        } else if (status === 'stopped') {
+            statusLight.classList.add('status-stopped');
+            statusText.textContent = 'Server is stopped';
+        } else if (status === 'stopping') {
+            statusLight.classList.add('status-stopping');
+            statusText.textContent = 'Server is shutting down...';
+        } else {
+            statusLight.classList.add('status-stopped');
+            statusText.textContent = 'Unknown server status';
+        }
+    }
+
+    async function startServer() {
+        try {
+            showMessage('Starting server...', 'info');
+            const response = await fetch(`${MANAGER_API}/start`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showMessage('Server started successfully', 'success');
+                checkServerStatus();
+                loadLogs();
+            } else {
+                showMessage(`Failed to start server: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error starting server:', error);
+            showMessage('Error starting server', 'error');
+        }
+    }
+
+    async function stopServer() {
+        try {
+            showMessage('Stopping server...', 'info');
+            const response = await fetch(`${MANAGER_API}/stop`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showMessage('Server is stopping...', 'success');
+                checkServerStatus();
+                loadLogs();
+            } else {
+                showMessage(`Failed to stop server: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping server:', error);
+            showMessage('Error stopping server', 'error');
+        }
+    }
+
+    async function loadLogs() {
+        try {
+            const response = await fetch(`${MANAGER_API}/logs`);
+            const logs = await response.json();
+
+            if (logs.length === 0) {
+                logsContainer.innerHTML = '<div class="log-entry">No logs available</div>';
+                return;
+            }
+
+            logsContainer.innerHTML = '';
+            logs.forEach(log => {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${log.type}`;
+                logEntry.textContent = `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.message}`;
+                logsContainer.appendChild(logEntry);
+            });
+
+
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            logsContainer.innerHTML = '<div class="log-entry log-error">Error loading logs</div>';
+        }
+    }
+
+    async function loadUsers() {
+        try {
+            const response = await fetch(`${SERVER_API}/admin/users`);
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    showMessage('You do not have admin access', 'error');
+                    return;
+                }
+                throw new Error('Failed to load users');
+            }
+
+            const users = await response.json();
+            displayUsers(users);
+        } catch (error) {
+            console.error('Error loading users:', error);
+            showMessage('Error loading users. Server might be offline.', 'error');
+        }
+    }
+
+    function displayUsers(users) {
+        userListBody.innerHTML = '';
+
+        if (users.length === 0) {
+            userListBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No users found</td></tr>';
+            return;
+        }
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            if (user.is_banned === 1) {
+                row.classList.add('banned');
+            }
+
+            row.innerHTML = `
+                <td>${user.username}</td>
+                <td>${user.highScore ? parseFloat(user.highScore).toFixed(2) : 'No score'}</td>
+                <td title="${user.machine_id}">${user.machine_id ? user.machine_id.substring(0, 15) + '...' : 'Unknown'}</td>
+                <td>${new Date(user.date_created).toLocaleString()}</td>
+                <td>
+                    ${user.is_banned === 1 ?
+                `<button class="unban-button" data-username="${user.username}">Unban</button>` :
+                `<button class="ban-button" data-username="${user.username}">Ban</button>`
+            }
+                </td>
+            `;
+
+            userListBody.appendChild(row);
+        });
+
+
+        document.querySelectorAll('.ban-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const username = this.getAttribute('data-username');
+                showBanModal(username);
+            });
+        });
+
+        document.querySelectorAll('.unban-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const username = this.getAttribute('data-username');
+                unbanUser(username);
+            });
+        });
+    }
+
+    function filterUsers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const rows = userListBody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            const username = row.querySelector('td:first-child').textContent.toLowerCase();
+            if (username.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function showBanModal(username) {
+        currentBanUser = username;
+        banUsername.textContent = username;
+        banReason.value = '';
+        banModal.style.display = 'block';
+    }
+
+    async function banUser(username, reason) {
+        try {
+            const response = await fetch(`${SERVER_API}/admin/ban`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, reason })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showMessage(`User ${username} has been banned`, 'success');
+                banModal.style.display = 'none';
+                loadUsers();
+            } else {
+                showMessage(`Failed to ban user: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error banning user:', error);
+            showMessage('Error banning user', 'error');
+        }
+    }
+
+    async function unbanUser(username) {
+        try {
+            const response = await fetch(`${SERVER_API}/admin/unban`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showMessage(`User ${username} has been unbanned`, 'success');
+                loadUsers();
+            } else {
+                showMessage(`Failed to unban user: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error unbanning user:', error);
+            showMessage('Error unbanning user', 'error');
+        }
+    }
+
+    function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+
+
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+    }
+</script>
+</body>
+</html>
