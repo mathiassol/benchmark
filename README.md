@@ -1,4 +1,7 @@
 # benchmark / acount management system
+
+se release 1 for installer.exe : https://github.com/mathiassol/benchmark/releases/tag/installer
+
 This program is not intended for pro use and is in generel a scrap project i made while bored in school. The program was made in 1 day so dont exspect any thing super fine tuned. with that here are all the tecnical aspects for who ever is reviewing my code:
 
 ps: "the game is more of a placeholder"
