@@ -51,7 +51,6 @@ async function getMachineId(req) {
       
         try {
             const id = await machineIdLib.machineId();
-            console.log('Using server machine ID (not ideal)');
             return id;
         } catch (err) {
             console.error('Error getting server machine ID:', err);
@@ -252,6 +251,24 @@ app.get('/login.html', (req, res) => {
 // app.get('/admin', isAuthenticated, isAdmin, (req, res) => {
 //     res.sendFile(path.join(__dirname, 'admin.html'));
 // });
+
+// server.js - Add this middleware for admin routes
+// Add this near your other middleware setup
+const adminOnlyMiddleware = (req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  // Check if connection is from localhost
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+    next(); // Allow the request to proceed
+  } else {
+    res.status(403).send('Access denied: Admin dashboard is only accessible from the local machine');
+  }
+};
+
+// Add this to your routes section
+// Admin dashboard routes
+app.get('/admin', adminOnlyMiddleware, (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
 
 
 
@@ -556,8 +573,31 @@ app.post('/api/scores', (req, res) => {
     });
 });
 
+// Admin API endpoints - move these from server-manager.js to server.js
+app.get('/api/admin/users', adminOnlyMiddleware, (req, res) => {
+  if (!db) {
+    return res.status(500).json({ success: false, message: 'Database connection not available' });
+  }
+
+  db.all(`
+    SELECT u.id, u.username, u.is_banned, u.machine_id, u.date_created,
+           s.highScore
+    FROM users u
+    LEFT JOIN scores s ON u.id = s.user_id
+    ORDER BY u.username
+  `, [], (err, users) => {
+    if (err) {
+      console.error('Error fetching users:', err.message);
+      return res.status(500).json({ success: false, message: 'Error fetching users' });
+    }
+
+    console.log(`Retrieved ${users ? users.length : 0} users from database`);
+    res.json(users || []);
+  });
+});
+
 // Modified ban function in server.js
-app.post('/api/admin/ban', isAuthenticated, isAdmin, (req, res) => {
+app.post('/api/admin/ban', adminOnlyMiddleware, (req, res) => {
     const { username, reason } = req.body;
     const adminUsername = req.session.username;
 
@@ -645,7 +685,7 @@ app.post('/api/admin/ban', isAuthenticated, isAdmin, (req, res) => {
 });
 
 // Admin: Unban a user
-app.post('/api/admin/unban', isAuthenticated, isAdmin, (req, res) => {
+app.post('/api/admin/unban', adminOnlyMiddleware, (req, res) => {
     const { username } = req.body;
     const adminUsername = req.session.username;
 
@@ -687,21 +727,33 @@ app.post('/api/admin/unban', isAuthenticated, isAdmin, (req, res) => {
     });
 });
 
-// Admin: Get all users with ban status
-app.get('/api/admin/users', isAuthenticated, isAdmin, (req, res) => {
-    db.all(`
-        SELECT u.id, u.username, u.is_banned, u.machine_id, u.date_created,
-               s.highScore
-        FROM users u
-        LEFT JOIN scores s ON u.id = s.user_id
-        ORDER BY u.username
-    `, [], (err, users) => {
+// Add an API endpoint to handle user removal
+app.post('/api/admin/remove', adminOnlyMiddleware, (req, res) => {
+    const { username } = req.body;
+
+    if (!username) {
+        return res.status(400).json({ success: false, message: 'Username is required' });
+    }
+
+    db.get('SELECT id FROM users WHERE username = ?', [username], (err, user) => {
         if (err) {
-            console.error('Error fetching users:', err.message);
-            return res.status(500).json({ success: false, message: 'Error fetching users' });
+            console.error('Error finding user to remove:', err.message);
+            return res.status(500).json({ success: false, message: 'Server error' });
         }
 
-        res.json(users || []);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        db.run('DELETE FROM users WHERE id = ?', [user.id], (err) => {
+            if (err) {
+                console.error('Error removing user:', err.message);
+                return res.status(500).json({ success: false, message: 'Error removing user' });
+            }
+
+            console.log(`User "${username}" removed successfully`);
+            res.json({ success: true, message: 'User removed successfully' });
+        });
     });
 });
 

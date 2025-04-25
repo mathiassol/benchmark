@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Logs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    #logs {
+      padding: 10px;
+      height: 75vh;
+      overflow-y: auto;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+<div id="logs"></div>
+<button id="view-database" style="margin: 10px; padding: 10px; background: #1a86a8; color: white; border: none; border-radius: 5px; cursor: pointer;">View Database</button>
+<script>
+  const viewDatabaseButton = document.getElementById('view-database');
+  viewDatabaseButton.addEventListener('click', () => {
+    ipcRenderer.send('show-database');
+  });
+</script>
+<script>
+  const { ipcRenderer } = require('electron');
+  const logsDiv = document.getElementById('logs');
+
+  // Request stored logs when the page loads
+  ipcRenderer.send('get-logs');
+
+  ipcRenderer.on('load-logs', (event, storedLogs) => {
+    logsDiv.innerHTML = ''; // Clear existing logs
+    storedLogs.forEach((log) => {
+      const logEntry = document.createElement('div');
+      logEntry.textContent = log;
+      logsDiv.appendChild(logEntry);
+    });
+    logsDiv.scrollTop = logsDiv.scrollHeight; // Auto-scroll to the bottom
+  });
+
+  ipcRenderer.on('log-message', (event, message) => {
+    const logEntry = document.createElement('div');
+    logEntry.textContent = message;
+    logsDiv.appendChild(logEntry);
+    logsDiv.scrollTop = logsDiv.scrollHeight; // Auto-scroll to the bottom
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        #data {
+            padding: 10px;
+            height: 90vh;
+            overflow-y: auto;
+            background: #fff;
+            color: #000;
+            font-family: monospace;
+        }
+        #controls {
+            padding: 10px;
+            background: #333;
+            color: #fff;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #1a86a8;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #156c8a;
+        }
+    </style>
+</head>
+<body>
+<div id="controls">
+    <button id="refresh">Refresh Data</button>
+    <button id="back">Back to Logs</button>
+</div>
+<div id="data">Loading...</div>
+<script>
+    const { ipcRenderer } = require('electron');
+    const dataDiv = document.getElementById('data');
+    const refreshButton = document.getElementById('refresh');
+    const backButton = document.getElementById('back');
+
+    // Fetch database data
+    function fetchData() {
+        ipcRenderer.send('fetch-database');
+    }
+
+    ipcRenderer.on('database-data', (event, data) => {
+        dataDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    });
+
+    refreshButton.addEventListener('click', fetchData);
+    backButton.addEventListener('click', () => {
+        ipcRenderer.send('show-logs');
+    });
+
+    fetchData();
+</script>
+</body>
+</html>

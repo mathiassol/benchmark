@@ -8,8 +8,18 @@ const http = require('http');
 
 
 const managerApp = express();
-const MANAGER_PORT = 3001;
+const MANAGER_PORT = 3000;
 const MAIN_SERVER_PORT = 3000;
+
+managerApp.use((req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress;
+  // Check if the connection is from localhost (127.0.0.1) or ::1 (IPv6 localhost)
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') {
+    next(); // Allow the request to proceed
+  } else {
+    res.status(403).send('Access denied: Dashboard is only accessible from the local machine');
+  }
+});
 
 
 let db;
@@ -41,49 +51,40 @@ let serverStatus = 'stopped';
 let serverLogs = [];
 
 
-function startServer() {
-    if (serverProcess) {
-        return { success: false, message: 'Server is already running' };
-    }
+// server-manager.js - Remove or modify the startServer function:
 
-    try {
-      
-        serverProcess = spawn('node', ['server.js'], {
-            stdio: ['ignore', 'pipe', 'pipe']
-        });
-
-        serverStatus = 'running';
-
-      
-        serverProcess.stdout.on('data', (data) => {
-            const message = data.toString().trim();
-            console.log(`[Server]: ${message}`);
-            serverLogs.push({ type: 'info', message, timestamp: new Date().toISOString() });
-        });
-
-        serverProcess.stderr.on('data', (data) => {
-            const message = data.toString().trim();
-            console.error(`[Server Error]: ${message}`);
-            serverLogs.push({ type: 'error', message, timestamp: new Date().toISOString() });
-        });
-
-        serverProcess.on('close', (code) => {
-            console.log(`Server process exited with code ${code}`);
-            serverLogs.push({
-                type: 'info',
-                message: `Server process exited with code ${code}`,
-                timestamp: new Date().toISOString()
-            });
-            serverProcess = null;
-            serverStatus = 'stopped';
-        });
-
-        return { success: true, message: 'Server started successfully' };
-    } catch (error) {
-        console.error('Failed to start server:', error);
-        return { success: false, message: `Failed to start server: ${error.message}` };
-    }
+// Instead of starting a new server process, check if the server is already running
+function checkServerStatus() {
+  // Try to connect to the main server to see if it's running
+  const http = require('http');
+  const req = http.request({
+    hostname: 'localhost',
+    port: MAIN_SERVER_PORT,
+    path: '/api/status', // You may need to create this endpoint in your main server
+    method: 'GET'
+  }, (res) => {
+    serverStatus = 'running';
+    console.log('Main server is running');
+  });
+  
+  req.on('error', (e) => {
+    serverStatus = 'stopped';
+    console.log('Main server appears to be stopped');
+  });
+  
+  req.end();
+  
+  return { success: true, message: 'Server status checked' };
 }
+
+// Replace the startServer route with:
+managerApp.post('/api/manager/start', (req, res) => {
+  // Inform the user that they need to start the main server separately
+  res.json({ 
+    success: false, 
+    message: 'Please start the main server using "npm start" in a separate terminal'
+  });
+});
 
 
 function stopServer() {
@@ -116,11 +117,6 @@ function stopServer() {
     }
 }
 
-
-managerApp.post('/api/manager/start', (req, res) => {
-    const result = startServer();
-    res.json(result);
-});
 
 
 managerApp.post('/api/manager/stop', (req, res) => {

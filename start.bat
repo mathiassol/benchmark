@@ -1,1 +1,1 @@
-node start-dashboard.js
+npm run start

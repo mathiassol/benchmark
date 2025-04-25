@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WASD Game Admin Panel</title>
+    <title>Admin Panel</title>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -245,37 +245,11 @@
 </head>
 <body>
 <div class="container">
-    <h1>WASD Game Admin Dashboard</h1>
+    <h1>Admin Dashboard</h1>
 
     <div id="message" style="display: none;"></div>
 
-    <div class="tabs">
-        <div id="server-tab" class="tab active">Server Control</div>
-        <div id="users-tab" class="tab">User Management</div>
-    </div>
-
-    <div id="server-content" class="tab-content active">
-        <div class="admin-panel">
-            <h2>Server Control</h2>
-            <div class="server-status">
-                <div>
-                    <span class="status-indicator" id="status-light"></span>
-                    <span id="status-text">Checking server status...</span>
-                </div>
-                <div class="server-controls">
-                    <button id="start-server" class="start-button">Start Server</button>
-                    <button id="stop-server" class="stop-button">Stop Server</button>
-                    <button id="refresh-status" class="refresh-button">Refresh Status</button>
-                </div>
-            </div>
-            <h3>Server Logs</h3>
-            <div class="logs-container" id="logs-container">
-                <div class="log-entry">Waiting for logs...</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="users-content" class="tab-content">
+    <div id="users-content" class="tab-content active">
         <div class="admin-panel">
             <h2>User Management</h2>
 
@@ -314,7 +288,6 @@
 </div>
 
 <script>
-
     const userListBody = document.getElementById('user-list-body');
     const messageDiv = document.getElementById('message');
     const searchInput = document.getElementById('search-input');
@@ -324,41 +297,10 @@
     const banReason = document.getElementById('ban-reason');
     const confirmBanButton = document.getElementById('confirm-ban');
     const modalClose = document.querySelector('.close');
-    const statusLight = document.getElementById('status-light');
-    const statusText = document.getElementById('status-text');
-    const startServerButton = document.getElementById('start-server');
-    const stopServerButton = document.getElementById('stop-server');
-    const refreshStatusButton = document.getElementById('refresh-status');
-    const logsContainer = document.getElementById('logs-container');
-    const serverTab = document.getElementById('server-tab');
-    const usersTab = document.getElementById('users-tab');
-    const serverContent = document.getElementById('server-content');
-    const usersContent = document.getElementById('users-content');
-
 
     let currentBanUser = null;
 
-
-    let statusInterval = null;
-
-
-    const MANAGER_API = '/api/manager';
-
     const SERVER_API = '/api';
-
-
-    initTabs();
-    checkServerStatus();
-    startStatusInterval();
-    loadLogs();
-
-
-    startServerButton.addEventListener('click', startServer);
-    stopServerButton.addEventListener('click', stopServer);
-    refreshStatusButton.addEventListener('click', function() {
-        checkServerStatus();
-        loadLogs();
-    });
 
     searchButton.addEventListener('click', filterUsers);
     searchInput.addEventListener('keyup', function(event) {
@@ -383,146 +325,7 @@
         }
     });
 
-    serverTab.addEventListener('click', function() {
-        activateTab('server');
-    });
-
-    usersTab.addEventListener('click', function() {
-        activateTab('users');
-        loadUsers();
-    });
-
-
-    function initTabs() {
-
-        activateTab('server');
-    }
-
-    function activateTab(tabName) {
-
-        [serverTab, usersTab].forEach(tab => tab.classList.remove('active'));
-        [serverContent, usersContent].forEach(content => content.classList.remove('active'));
-
-
-        if (tabName === 'server') {
-            serverTab.classList.add('active');
-            serverContent.classList.add('active');
-        } else if (tabName === 'users') {
-            usersTab.classList.add('active');
-            usersContent.classList.add('active');
-        }
-    }
-
-    function startStatusInterval() {
-
-        statusInterval = setInterval(() => {
-            checkServerStatus();
-            loadLogs();
-        }, 5000);
-    }
-
-    async function checkServerStatus() {
-        try {
-            const response = await fetch(`${MANAGER_API}/status`);
-            const data = await response.json();
-
-
-            updateStatusDisplay(data.status);
-
-
-            startServerButton.disabled = data.isRunning;
-            stopServerButton.disabled = !data.isRunning;
-        } catch (error) {
-            console.error('Error checking server status:', error);
-            updateStatusDisplay('unknown');
-        }
-    }
-
-    function updateStatusDisplay(status) {
-        statusLight.className = 'status-indicator';
-
-        if (status === 'running') {
-            statusLight.classList.add('status-running');
-            statusText.textContent = 'Server is running';
-        } else if (status === 'stopped') {
-            statusLight.classList.add('status-stopped');
-            statusText.textContent = 'Server is stopped';
-        } else if (status === 'stopping') {
-            statusLight.classList.add('status-stopping');
-            statusText.textContent = 'Server is shutting down...';
-        } else {
-            statusLight.classList.add('status-stopped');
-            statusText.textContent = 'Unknown server status';
-        }
-    }
-
-    async function startServer() {
-        try {
-            showMessage('Starting server...', 'info');
-            const response = await fetch(`${MANAGER_API}/start`, {
-                method: 'POST'
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                showMessage('Server started successfully', 'success');
-                checkServerStatus();
-                loadLogs();
-            } else {
-                showMessage(`Failed to start server: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            console.error('Error starting server:', error);
-            showMessage('Error starting server', 'error');
-        }
-    }
-
-    async function stopServer() {
-        try {
-            showMessage('Stopping server...', 'info');
-            const response = await fetch(`${MANAGER_API}/stop`, {
-                method: 'POST'
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                showMessage('Server is stopping...', 'success');
-                checkServerStatus();
-                loadLogs();
-            } else {
-                showMessage(`Failed to stop server: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            console.error('Error stopping server:', error);
-            showMessage('Error stopping server', 'error');
-        }
-    }
-
-    async function loadLogs() {
-        try {
-            const response = await fetch(`${MANAGER_API}/logs`);
-            const logs = await response.json();
-
-            if (logs.length === 0) {
-                logsContainer.innerHTML = '<div class="log-entry">No logs available</div>';
-                return;
-            }
-
-            logsContainer.innerHTML = '';
-            logs.forEach(log => {
-                const logEntry = document.createElement('div');
-                logEntry.className = `log-entry log-${log.type}`;
-                logEntry.textContent = `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.message}`;
-                logsContainer.appendChild(logEntry);
-            });
-
-
-            logsContainer.scrollTop = logsContainer.scrollHeight;
-        } catch (error) {
-            console.error('Error loading logs:', error);
-            logsContainer.innerHTML = '<div class="log-entry log-error">Error loading logs</div>';
-        }
-    }
+    loadUsers();
 
     async function loadUsers() {
         try {
@@ -568,12 +371,12 @@
                 `<button class="unban-button" data-username="${user.username}">Unban</button>` :
                 `<button class="ban-button" data-username="${user.username}">Ban</button>`
             }
+                    <button class="remove-button" data-username="${user.username}">Remove</button>
                 </td>
             `;
 
             userListBody.appendChild(row);
         });
-
 
         document.querySelectorAll('.ban-button').forEach(button => {
             button.addEventListener('click', function() {
@@ -588,6 +391,40 @@
                 unbanUser(username);
             });
         });
+
+        document.querySelectorAll('.remove-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const username = this.getAttribute('data-username');
+                removeUser(username);
+            });
+        });
+    }
+
+    async function removeUser(username) {
+        if (!confirm(`Are you sure you want to remove the user "${username}"?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${SERVER_API}/admin/remove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showMessage(`User "${username}" has been removed`, 'success');
+                loadUsers();
+            } else {
+                showMessage(`Failed to remove user: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error removing user:', error);
+            showMessage('Error removing user', 'error');
+        }
     }
 
     function filterUsers() {
@@ -662,7 +499,6 @@
         messageDiv.textContent = text;
         messageDiv.className = `message ${type}`;
         messageDiv.style.display = 'block';
-
 
         setTimeout(() => {
             messageDiv.style.display = 'none';
